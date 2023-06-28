@@ -1,0 +1,328 @@
+#include <iostream> //  Used for input/output operations in the code.
+#include <fstream> // Used for file input/output operations in the code
+#include <string>  // Used for string operations and manipulations in the code
+#include <ctime>//Used for generating random numbers and working with time-related functions in the code
+#include <chrono>// Used for measuring and manipulating time durations in the code.
+#include <cstdlib>	//: Used for various general-purpose functions and conversions in the code.
+#include <algorithm>  //Used for various algorithms, such as shuffling elements, in the code
+
+
+using namespace std;
+
+const string DICTIONARY_FILE = "Dictionary.txt";
+const string SCORE_FILE = "Scores.txt";
+const int MAX_GUESSES = 3;
+const int MAX_TIME = 10;
+const int MAX_SPELLS = 5;
+const int WORD_COUNT = 3;
+ 
+ // linkedlist class for word
+class WordList {
+private:
+    struct Node {
+        string word;
+        Node* next;
+    };
+
+    Node* head;
+    int count;
+
+public:
+    WordList() : head(nullptr), count(0) {}
+
+    ~WordList() {
+        while (head != nullptr) {
+            Node* temp = head;
+            head = head->next;
+            delete temp;
+        }
+    }
+
+    void insert(const string& word) {
+        Node* newNode = new Node;
+        newNode->word = word;
+        newNode->next = nullptr;
+
+        if (head == nullptr) {
+            head = newNode;
+        } else {
+            Node* current = head;
+            while (current->next != nullptr) {
+                current = current->next;
+            }
+            current->next = newNode;
+        }
+
+        count++;
+    }
+
+    string getRandomWord() const {  // random word assign
+        if (head == nullptr) {
+            return "";
+        }
+
+        int randomIndex = rand() % count;
+        Node* current = head;
+
+        for (int i = 0; i < randomIndex; i++) {
+            current = current->next;
+        }
+
+        return current->word;
+    }
+};
+// game class for game logic
+class Game {
+private:
+    string playerName;
+    int score;
+    int remainingGuesses;
+    int guessedWordsCount;
+    int spellsBroken;
+    WordList wordList;
+
+public:
+    Game() : score(0), remainingGuesses(MAX_GUESSES), guessedWordsCount(0), spellsBroken(0) {}
+
+    void setPlayerName(const string& name) {
+        playerName = name;
+    }
+
+    void loadDictionary() {
+        ifstream inputFile(DICTIONARY_FILE);
+
+        if (inputFile.is_open()) {
+            string word;
+            while (getline(inputFile, word)) {
+                wordList.insert(word);
+            }
+            inputFile.close();
+        } else {
+            cout << "Error: Failed to open dictionary file." << endl;
+        }
+    }
+
+ //interface
+    void play() {
+        cout << "---------------------------------------------" << endl;
+        cout << "          The Kingdom's Spellbreaker" << endl;
+        cout << "---------------------------------------------" << endl;
+        cout << "A wicked witch has cursed the kingdom!" << endl;
+        cout << "As the chosen Spellbreaker, your mission is to break her spells." << endl;
+        cout << "You must guess the correct words to break the spells and save the kingdom." << endl;
+        cout << "You need to break " << MAX_SPELLS << " spells by guessing " << WORD_COUNT << " words correctly each time." << endl;  
+        cout << "But be careful, you only have " << MAX_GUESSES << " attempts for each word." << endl;
+        cout << "---------------------------------------------" << endl;
+        cout << "Let the quest begin!" << endl;
+        cout << "---------------------------------------------" << endl;
+        cout << endl;
+
+        while (spellsBroken < MAX_SPELLS) {
+            cout << "Spell " << (spellsBroken + 1) << ": " << endl;
+
+            while (remainingGuesses > 0 && guessedWordsCount < WORD_COUNT) {
+                string originalWord = wordList.getRandomWord();
+
+                if (originalWord.empty()) {
+                    cout << "Error: No words found in the dictionary." << endl;
+                    return;
+                }
+
+                string shuffledWord = shuffleWord(originalWord); // to shuffle the original word
+
+                cout << "Shuffled Word: " << shuffledWord << endl;
+                cout << "Guess the original word:  ";
+
+                string guessedWord;
+                cin >> guessedWord;
+
+                if (guessedWord == originalWord) {  //game logic
+                    cout << "Correct guess!" << endl;
+                    score++;
+                    guessedWordsCount++;
+                    remainingGuesses = MAX_GUESSES;
+                } else {
+                    cout << "Wrong guess!" << endl;
+                    remainingGuesses--;
+                    showCorrectWordHint(originalWord);
+                }
+
+                cout << endl;
+            }
+
+            if (guessedWordsCount == WORD_COUNT) {
+                spellsBroken++;
+                guessedWordsCount = 0;
+                remainingGuesses = MAX_GUESSES;
+                score += 5;
+                cout << "Congratulations! You have broken the spell!" << endl;
+                cout << "---------------------------------------------" << endl;
+                cout << "Continue your quest to break the next spell." << endl;
+                cout << "---------------------------------------------" << endl;
+                cout << endl;
+                system("pause");
+                system("cls");
+            } else {
+                cout << "You failed to guess the correct words." << endl;
+                cout << "The spell remains unbroken." << endl;
+                break;
+            }
+        }
+
+        if (spellsBroken == MAX_SPELLS) {
+            cout << "Congratulations! You have successfully broken all the spells!" << endl;
+            cout << "The kingdom is free from the wicked witch's curse." << endl;
+            cout << "---------------------------------------------" << endl;
+            cout << "Score Summary" << endl;
+            cout << "Player: " << playerName << endl;
+            cout << "Total Spells Broken: " << spellsBroken << endl;
+            cout << "Total Score: " << score << endl;
+            cout << "---------------------------------------------" << endl;
+            saveScore();
+        } else {
+            cout << "Game Over!" << endl;
+            cout << "You failed to break the witch's spells." << endl;
+            cout << "The kingdom remains cursed." << endl;
+            cout << "---------------------------------------------" << endl;
+        }
+    }
+
+    void saveScore() {
+        ofstream outputFile(SCORE_FILE, ios::app);
+
+        if (outputFile.is_open()) {
+            outputFile << playerName << " " << score << endl;
+            outputFile.close();
+            cout << "Score saved successfully!" << endl;
+        } else {
+            cout << "Error: Failed to open score file for saving." << endl;
+        }
+    }
+
+    string shuffleWord(const string& word) {
+        string shuffledWord = word;
+
+        for (size_t i = 0; i < shuffledWord.length() - 1; i++) {
+            size_t j = rand() % (shuffledWord.length() - i) + i;
+            swap(shuffledWord[i], shuffledWord[j]);
+        }
+
+        return shuffledWord;
+    }
+
+    void showCorrectWordHint(const string& word) {  // hintfunction
+        int randomIndex = rand() % word.length();
+        string hint = word;
+        hint[randomIndex] = '_';
+
+        cout << "Hint: " << hint << endl; 
+    }
+};
+// main manu function
+void displayMainMenu() {  
+    cout << "---------------------------------------------" << endl;
+    cout << "          The Kingdom's Spellbreaker Menu" << endl;
+    cout << "---------------------------------------------" << endl;
+    cout << "1. Start a New Game" << endl;
+    cout << "2. Load Previous Game Scores" << endl;
+    cout << "3. Add a Word to the Dictionary" << endl;
+    cout << "4. Exit" << endl;
+    cout << "Enter your choice: ";
+}
+
+void startNewGame() {
+    Game game;
+    string playerName;
+
+    system("cls");  // to clear the screen
+
+    cout << "---------------------------------------------" << endl;
+    cout << "          The Kingdom's Spellbreaker" << endl;
+    cout << "---------------------------------------------" << endl;
+    cout << "Enter your name: ";
+    cin.ignore();
+    getline(cin, playerName);
+
+    game.setPlayerName(playerName);
+    game.loadDictionary();
+    game.play();
+
+    system("pause");
+    system("cls");
+}
+
+void loadScores() {
+    ifstream inputFile(SCORE_FILE);
+
+    if (inputFile.is_open()) {
+        string line;
+        cout << "---------------------------------------------" << endl;
+        cout << "           Previous Game Scores" << endl;
+        cout << "---------------------------------------------" << endl;
+
+        while (getline(inputFile, line)) {
+            cout << line << endl;
+        }
+
+        cout << "---------------------------------------------" << endl;
+        inputFile.close();
+    } else {
+        cout << "Error: Failed to open score file for loading." << endl;
+    }
+}
+
+void addWordToDictionary() {
+    string word;
+    ofstream outputFile(DICTIONARY_FILE, ios::app);
+
+    system("cls");
+
+    cout << "---------------------------------------------" << endl;
+    cout << "            Add a Word to Dictionary" << endl;
+    cout << "---------------------------------------------" << endl;
+    cout << "Enter the word to add: ";
+    cin.ignore();
+    getline(cin, word);
+
+    if (outputFile.is_open()) {
+        outputFile << word << endl;
+        outputFile.close();
+        cout << "Word added successfully!" << endl;
+    } else {
+        cout << "Error: Failed to open dictionary file for adding a word." << endl;
+    }
+
+    system("pause");
+    system("cls");
+}
+
+int main() {  //main functions
+    srand(time(0));
+
+    int choice;
+    bool exitGame = false;
+
+    while (!exitGame) {
+        displayMainMenu();
+        cin >> choice;
+
+        switch (choice) {
+            case 1:
+                startNewGame();
+                break;
+            case 2:
+                loadScores();
+                break;
+            case 3:
+                addWordToDictionary();
+                break;
+            case 4:
+                exitGame = true;
+                break;
+            default:
+                cout << "Invalid choice. Please try again." << endl;
+        }
+    }
+
+    return 0;
+}

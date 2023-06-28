@@ -47,3 +47,5 @@ In "The Kingdom's Spellbreaker" game, linked lists play a crucial role in storin
 4. Progression and Node Removal: As the player successfully guesses a word and breaks a spell, the corresponding linked list node is removed. This progression is achieved by manipulating the links between nodes, effectively removing the completed word from the linked list.
 5. Word Refresh: Once all the words in the linked list have been guessed and the spells are broken, the game can refresh the linked list by re-reading words from the "Dictionary.txt" file. This ensures that the player can continue playing and breaking spells with a new set of words.
 By utilizing linked lists, "The Kingdom's Spellbreaker" game effectively manages and manipulates words, enabling random word selection, shuffling, progression, and refreshing of the game's vocabulary. Linked lists provide a flexible and efficient data structure to store and process the words, enhancing the gameplay experience.
+
+youtubelink: https://youtu.be/1APTsHRgnuo
